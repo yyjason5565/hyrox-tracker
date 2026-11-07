@@ -17,6 +17,7 @@ const passphrase = "local-screen-lock";
 function fullBody(actual = "80:00", distance?: number) {
   return {
     sessionDate: "2026-04-02",
+    division: "men_open" as const,
     sessionType: "full" as const,
     actualElapsed: actual,
     transitions: "0:00",
@@ -32,9 +33,9 @@ function fullBody(actual = "80:00", distance?: number) {
 }
 
 test("profiles on one device do not share sessions", () => {
-  let data = addProfile(emptyDevice(), "Ada");
+  let data = addProfile(emptyDevice(), "Ada", "men_open");
   const ada = data.profiles[0].id;
-  data = addProfile(data, "Bea");
+  data = addProfile(data, "Bea", "women_open");
   const bea = data.profiles[1].id;
   const parsed = validateSessionBody(fullBody());
   assert.equal(parsed.ok, true);
@@ -55,7 +56,7 @@ test("local lock stores a salted digest and not the passphrase", async () => {
 });
 
 test("backup has no passphrase and import stays on the chosen profile", () => {
-  let data = addProfile(emptyDevice(), "Ada");
+  let data = addProfile(emptyDevice(), "Ada", "men_open");
   const ada = data.activeProfileId as string;
   const official = validateSessionBody(fullBody());
   const custom = validateSessionBody(fullBody("50:00", 400));
@@ -69,7 +70,7 @@ test("backup has no passphrase and import stays on the chosen profile", () => {
   const rejected = importBackup(data, { ...exported, password: passphrase }, { profileId: ada });
   assert.equal(rejected.ok, false);
 
-  let other = addProfile(emptyDevice(), "Bea");
+  let other = addProfile(emptyDevice(), "Bea", "women_open");
   const bea = other.profiles[0].id;
   const imported = importBackup(other, exported, { profileId: bea });
   assert.equal(imported.ok, true);

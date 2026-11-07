@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { DeviceProvider } from "@/components/device-context";
+import { APP_DEFINITION } from "@/lib/divisions";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,7 +16,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Lane Ledger",
-  description: "Browser-only training log for men's open singles sessions. No account and no server.",
+  description: `${APP_DEFINITION}. Browser-only. No account and no server.`,
+  applicationName: "Lane Ledger",
+  manifest: "/manifest.webmanifest",
   robots: { index: false, follow: false },
 };
 

@@ -1,3 +1,5 @@
+import { emptyTraining, sanitizeFocus, sanitizeTraining, type FocusHold, type TrainingSettings } from "./advice";
+import { isDivisionId, type DivisionId } from "./divisions";
 import { createLocalLock, type LocalLock } from "./local-lock";
 import type { SessionType } from "./segments";
 import type { SessionInput } from "./validate";
@@ -15,6 +17,9 @@ export interface SavedSession {
 export interface Profile {
   id: string;
   name: string;
+  division: DivisionId | null;
+  training: TrainingSettings;
+  focusHold: FocusHold | null;
   lock: LocalLock | null;
   sessions: SavedSession[];
 }
@@ -31,15 +36,41 @@ export function emptyDevice(): DeviceData {
   return { version: 1, activeProfileId: null, profiles: [] };
 }
 
-export function addProfile(data: DeviceData, name: string): DeviceData {
+export function addProfile(data: DeviceData, name: string, division: DivisionId): DeviceData {
   const trimmed = name.trim();
   const profile: Profile = {
     id: crypto.randomUUID(),
     name: trimmed,
+    division,
+    training: emptyTraining(),
+    focusHold: null,
     lock: null,
     sessions: [],
   };
   return { ...data, activeProfileId: profile.id, profiles: [...data.profiles, profile] };
+}
+
+export function setProfileDivision(data: DeviceData, profileId: string, division: DivisionId): DeviceData {
+  return {
+    ...data,
+    profiles: data.profiles.map((profile) => (profile.id === profileId ? { ...profile, division } : profile)),
+  };
+}
+
+export function setProfileTraining(data: DeviceData, profileId: string, training: TrainingSettings): DeviceData {
+  return {
+    ...data,
+    profiles: data.profiles.map((profile) =>
+      profile.id === profileId ? { ...profile, training: sanitizeTraining(training) } : profile,
+    ),
+  };
+}
+
+export function setProfileFocus(data: DeviceData, profileId: string, focusHold: FocusHold | null): DeviceData {
+  return {
+    ...data,
+    profiles: data.profiles.map((profile) => (profile.id === profileId ? { ...profile, focusHold } : profile)),
+  };
 }
 
 export function renameProfile(data: DeviceData, profileId: string, name: string): DeviceData {
@@ -124,10 +155,14 @@ function containsPasswordKey(value: unknown): boolean {
 export function exportProfile(profile: Profile) {
   return {
     format: "lane-ledger-backup",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     profileName: profile.name,
+    division: profile.division,
+    training: profile.training,
+    focusHold: profile.focusHold,
     sessions: profile.sessions.map((session) => ({
+      division: session.input.division,
       sessionDate: session.input.sessionDate,
       sessionType: session.input.sessionType,
       actualElapsed: clock(session.input.actualElapsedSec),
@@ -191,9 +226,11 @@ export function importBackup(
     return { ok: false, error: "Backup must be a JSON object." };
   }
   const record = body as Record<string, unknown>;
-  if (record.format !== "lane-ledger-backup" || record.version !== 1) {
+  if (record.format !== "lane-ledger-backup" || (record.version !== 1 && record.version !== 2)) {
     return { ok: false, error: "Unrecognized backup file." };
   }
+  const legacy = record.version === 1;
+  const fileDivision = isDivisionId(record.division) ? record.division : legacy ? "men_open" : null;
   if ("userId" in record || "username" in record) {
     return { ok: false, error: "Backups cannot assign an online account. This app has no accounts." };
   }
@@ -201,7 +238,7 @@ export function importBackup(
   if (record.sessions.length > 200) return { ok: false, error: "Import at most 200 sessions at a time." };
   const inputs: SessionInput[] = [];
   for (const [index, session] of record.sessions.entries()) {
-    const parsed = validateSessionBody(session, now);
+    const parsed = validateSessionBody(withDivision(session, legacy ? "men_open" : fileDivision), now);
     if (!parsed.ok) return { ok: false, error: `Session ${index + 1} is not valid.` };
     inputs.push(parsed.value);
   }
@@ -214,7 +251,15 @@ export function importBackup(
   }));
   if ("newProfile" in target) {
     const name = typeof record.profileName === "string" && record.profileName.trim() ? record.profileName.trim().slice(0, 80) : "Imported person";
-    const profile: Profile = { id: crypto.randomUUID(), name, lock: null, sessions: saved };
+    const profile: Profile = {
+      id: crypto.randomUUID(),
+      name,
+      division: fileDivision,
+      training: legacy ? emptyTraining() : sanitizeTraining(record.training),
+      focusHold: legacy ? null : sanitizeFocus(record.focusHold),
+      lock: null,
+      sessions: saved,
+    };
     return {
       ok: true,
       imported: saved.length,
@@ -236,6 +281,31 @@ export function importBackup(
   };
 }
 
+function withDivision(session: unknown, fallback: DivisionId | null): unknown {
+  if (typeof session !== "object" || session === null || Array.isArray(session)) return session;
+  const record = session as Record<string, unknown>;
+  if (isDivisionId(record.division)) return record;
+  if (!fallback) return record;
+  return { ...record, division: fallback };
+}
+
+function normalizeProfile(profile: Profile): Profile {
+  const division = isDivisionId(profile.division) ? profile.division : null;
+  return {
+    ...profile,
+    division,
+    training: sanitizeTraining(profile.training),
+    focusHold: sanitizeFocus(profile.focusHold),
+    sessions: (profile.sessions ?? []).map((session) => ({
+      ...session,
+      input: {
+        ...session.input,
+        division: isDivisionId(session.input?.division) ? session.input.division : "men_open",
+      },
+    })),
+  };
+}
+
 export function loadDevice(): { ok: true; data: DeviceData } | { ok: false } {
   if (typeof localStorage === "undefined") return { ok: true, data: emptyDevice() };
   const raw = localStorage.getItem(DEVICE_STORAGE_KEY);
@@ -243,7 +313,14 @@ export function loadDevice(): { ok: true; data: DeviceData } | { ok: false } {
   try {
     const parsed = JSON.parse(raw) as DeviceData;
     if (parsed.version !== 1 || !Array.isArray(parsed.profiles)) return { ok: false };
-    return { ok: true, data: parsed };
+    return {
+      ok: true,
+      data: {
+        version: 1,
+        activeProfileId: typeof parsed.activeProfileId === "string" ? parsed.activeProfileId : null,
+        profiles: parsed.profiles.map((profile) => normalizeProfile(profile)),
+      },
+    };
   } catch {
     return { ok: false };
   }

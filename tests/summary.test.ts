@@ -7,7 +7,16 @@ import { officialSegments, validateSessionBody } from "../src/lib/validate.ts";
 const today = todayInKualaLumpur(new Date("2026-11-06T16:30:00.000Z"));
 
 function session(body: Record<string, unknown>) {
-  const parsed = validateSessionBody({ sessionDate: "2026-03-01", rpe: null, notes: "", transitions: null, penalties: null, actualElapsed: null, ...body });
+  const parsed = validateSessionBody({
+    sessionDate: "2026-03-01",
+    division: "men_open",
+    rpe: null,
+    notes: "",
+    transitions: null,
+    penalties: null,
+    actualElapsed: null,
+    ...body,
+  });
   assert.equal(parsed.ok, true, parsed.ok ? "" : JSON.stringify(parsed.fieldErrors));
   if (!parsed.ok) throw new Error("unreachable");
   return parsed.value;
@@ -108,13 +117,17 @@ test("official full race is eligible and a faster modified session is not the be
   });
   assert.equal(flagged.ok, false);
 
-  const bests = officialBests([
-    { id: "official", sessionDate: "2026-03-01", segments: official.segments, math: official },
-    { id: "modified", sessionDate: "2026-03-02", segments: modified.segments, math: modified },
-  ]);
+  const bests = officialBests(
+    [
+      { id: "official", sessionDate: "2026-03-01", segments: official.segments, math: official },
+      { id: "modified", sessionDate: "2026-03-02", segments: modified.segments, math: modified },
+    ],
+    "men_open",
+  );
   assert.equal(bests.eligibleCount, 1);
   assert.equal(bests.finish?.sessionId, "official");
-  assert.equal(bests.finish?.seconds, 80 * 60);
+  assert.equal(bests.finish?.seconds, 16 * 4 * 60);
+  assert.notEqual(bests.finish?.seconds, 80 * 60);
   assert.equal(bests.segments.run_1?.sessionId, "official");
   assert.notEqual(bests.segments.run_1?.seconds, 120);
 });

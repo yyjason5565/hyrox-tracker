@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { FocusHold, TrainingSettings } from "@/lib/advice";
+import type { DivisionId } from "@/lib/divisions";
 import {
   addProfile,
   clearProfileLock,
@@ -13,7 +15,10 @@ import {
   removeProfile,
   renameProfile,
   saveSession,
+  setProfileDivision,
+  setProfileFocus,
   setProfileLock,
+  setProfileTraining,
   type DeviceData,
   type Profile,
 } from "@/lib/device-store";
@@ -27,9 +32,12 @@ interface DeviceApi {
   active: Profile | null;
   unlocked: boolean;
   resetEmpty: () => void;
-  createProfile: (name: string) => void;
+  createProfile: (name: string, division: DivisionId) => void;
   selectProfile: (profileId: string) => void;
   rename: (name: string) => void;
+  setDivision: (division: DivisionId) => void;
+  setTraining: (training: TrainingSettings) => void;
+  setFocus: (focus: FocusHold) => void;
   eraseActive: () => void;
   unlock: (password: string) => Promise<boolean>;
   lockScreen: () => void;
@@ -74,8 +82,8 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       setOpenLocks({});
       commit(emptyDevice());
     },
-    createProfile: (name: string) => {
-      const next = addProfile(data, name);
+    createProfile: (name: string, division: DivisionId) => {
+      const next = addProfile(data, name, division);
       const created = next.profiles[next.profiles.length - 1];
       setOpenLocks((current) => ({ ...current, [created.id]: true }));
       commit(next);
@@ -84,6 +92,26 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     rename: (name: string) => {
       if (!active) return;
       commit(renameProfile(data, active.id, name));
+    },
+    setDivision: (division: DivisionId) => {
+      if (!active) return;
+      commit(setProfileDivision(data, active.id, division));
+    },
+    setTraining: (training: TrainingSettings) => {
+      if (!active) return;
+      commit(setProfileTraining(data, active.id, training));
+    },
+    setFocus: (focus: FocusHold) => {
+      if (!active) return;
+      if (
+        active.focusHold &&
+        active.focusHold.stationKey === focus.stationKey &&
+        active.focusHold.startedOn === focus.startedOn &&
+        active.focusHold.reviewOn === focus.reviewOn
+      ) {
+        return;
+      }
+      commit(setProfileFocus(data, active.id, focus));
     },
     eraseActive: () => {
       if (!active) return;

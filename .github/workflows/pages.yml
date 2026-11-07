@@ -1,20 +1,20 @@
-name: GitHub Pages
+name: Check
 
-# Builds a static site and deploys it only from the GitHub repository that
-# contains this file. Do not put this project in the healthlog repository.
+# Tests and a static build only. GitHub Pages publishes the committed docs/
+# folder from branch main. This workflow must not deploy, or it would compete
+# with that source. Do not put this project in the healthlog repository.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,7 +23,7 @@ jobs:
       - name: Refuse the existing HealthLog repository
         if: github.event.repository.name == 'healthlog'
         run: |
-          echo "Refusing to deploy. This tracker must not replace https://yyjason5565.github.io/healthlog/."
+          echo "Refusing to run. This tracker must not replace https://yyjason5565.github.io/healthlog/."
           exit 1
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,17 +43,3 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: ${{ steps.base.outputs.path }}
-      - run: touch out/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: out
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to this repository's GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
