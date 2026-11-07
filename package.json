@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 4317 -H 0.0.0.0",
     "lint": "eslint",
-    "test": "tsx --test --test-concurrency=1 tests/summary.test.ts tests/local-store.test.ts tests/totals.test.ts tests/guidance.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/summary.test.ts tests/local-store.test.ts tests/totals.test.ts tests/guidance.test.ts tests/navigation.test.ts",
     "zip:pages": "rm -rf out && BASE_PATH= npm run build && touch out/.nojekyll && rm -f lane-ledger-pages.zip && cd out && zip -r ../lane-ledger-pages.zip ."
   },
   "dependencies": {

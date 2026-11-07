@@ -4,53 +4,62 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useDevice } from "@/components/device-context";
-import { APP_NAME, DIVISION_LABEL } from "@/lib/divisions";
-
-const LINKS = [
-  { href: "/log", label: "Log" },
-  { href: "/log/new", label: "New" },
-  { href: "/log/history", label: "History" },
-  { href: "/log/backup", label: "Backup" },
-];
+import { DIVISION_LABEL } from "@/lib/divisions";
+import { TAB_ITEMS, activeTab, normalizePath, showTabBar } from "@/lib/navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const device = useDevice();
   const pathname = usePathname();
   const router = useRouter();
+  const path = normalizePath(pathname);
+  const tabs = showTabBar(path);
+  const current = activeTab(path);
 
   useEffect(() => {
     if (!device.ready) return;
     if (!device.active || !device.unlocked) router.replace("/");
   }, [device.ready, device.active, device.unlocked, router]);
 
-  if (!device.ready || !device.active || !device.unlocked) return <main className="mx-auto max-w-5xl px-4 py-8">Loading this browser…</main>;
+  if (!device.ready || !device.active || !device.unlocked) {
+    return <main className="mx-auto max-w-3xl px-4 py-10">Loading this browser…</main>;
+  }
 
   return (
-    <div className="min-h-full">
-      <header className="border-b border-primary/50 bg-background/90">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/log" className="shrink-0 whitespace-nowrap text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</Link>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="max-w-44 truncate text-muted-foreground">{device.active.name}{device.active.division ? ` · ${DIVISION_LABEL[device.active.division]}` : ""}</span>
-            <Link href="/log/account" className="underline-offset-4 hover:underline">Profile</Link>
-            <button type="button" className="underline-offset-4 hover:underline" onClick={() => { device.lockScreen(); router.push("/"); }}>
-              {device.active.lock ? "Lock" : "Profiles"}
-            </button>
+    <div className="flex h-dvh min-h-0 flex-col">
+      {tabs ? (
+        <header className="shrink-0 border-b border-white/10 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-[15px]">
+              <span className="font-semibold">{device.active.name}</span>
+              {device.active.division ? <span className="text-muted-foreground"> · {DIVISION_LABEL[device.active.division]}</span> : null}
+            </p>
+            <Link href="/" className="inline-flex min-h-11 items-center text-[15px] font-medium text-primary">Switch</Link>
           </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-24">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-primary/40 bg-background/95">
-        <ul className="mx-auto grid max-w-5xl grid-cols-4">
-          {LINKS.map((link) => (
-            <li key={link.href}>
-              <Link href={link.href} className={`block py-3 text-center text-sm ${pathname === link.href ? "font-semibold text-primary" : "text-muted-foreground"}`}>
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+        </header>
+      ) : null}
+      <div className={tabs ? "min-h-0 flex-1 overflow-y-auto overscroll-y-contain" : "min-h-0 flex-1 overflow-hidden"}>
+        {tabs ? <div className="mx-auto w-full max-w-3xl px-4 py-4">{children}</div> : children}
+      </div>
+      {tabs ? (
+        <nav aria-label="Sections" className="shrink-0 border-t border-white/10 bg-card pb-[env(safe-area-inset-bottom)]">
+          <ul className="mx-auto grid max-w-3xl grid-cols-4">
+            {TAB_ITEMS.map((tab) => {
+              const selected = current === tab.href;
+              return (
+                <li key={tab.href}>
+                  <Link
+                    href={tab.href}
+                    aria-current={selected ? "page" : undefined}
+                    className={`flex min-h-12 items-center justify-center px-1 text-[12px] font-medium ${selected ? "text-primary" : "text-muted-foreground"}`}
+                  >
+                    {tab.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      ) : null}
     </div>
   );
 }

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import { DeviceNotice } from "@/components/data-warning";
+import { Fold } from "@/components/fold";
+import { NutritionSection } from "@/components/log-insights";
 import { useDevice } from "@/components/device-context";
 import {
   DAY_KIND_LABEL,
@@ -20,7 +24,6 @@ import {
   type TrainingSettings,
 } from "@/lib/advice";
 import { DIVISION_IDS, DIVISION_LABEL, type DivisionId } from "@/lib/divisions";
-import { LOCAL_LOCK_NOTICE } from "@/lib/local-lock";
 import { NUTRITION_GOALS, type NutritionGoal } from "@/lib/nutrition";
 
 const GOAL_LABEL: Record<NutritionGoal, string> = {
@@ -53,9 +56,19 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="grid max-w-lg gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Profile</h1>
-      <p className="text-sm text-muted-foreground">{LOCAL_LOCK_NOTICE}</p>
+    <div className="grid gap-5 pb-4">
+      <h1 className="text-[34px] leading-tight font-bold">Profile</h1>
+      <div className="ios-group">
+        <Link href="/" className="ios-row justify-between text-[17px]">
+          <span>Switch athlete</span>
+          <span className="text-muted-foreground">›</span>
+        </Link>
+        <Link href="/log/backup" className="ios-row justify-between text-[17px]">
+          <span>Export or import</span>
+          <span className="text-muted-foreground">›</span>
+        </Link>
+      </div>
+      <p className="text-[13px] leading-5 text-muted-foreground">Screen lock stays on this device. It is not a sign-in.</p>
       <form
         className="grid gap-2"
         onSubmit={(event) => {
@@ -211,7 +224,9 @@ export default function AccountPage() {
       >
         Erase this profile from this browser
       </Button>
-      {message ? <p className="text-sm">{message}</p> : null}
+      {profile ? <Fold title="Food & recovery"><NutritionSection profile={profile} /></Fold> : null}
+      {message ? <p className="text-[15px] text-destructive" role="status">{message}</p> : null}
+      <DeviceNotice />
     </div>
   );
 }
