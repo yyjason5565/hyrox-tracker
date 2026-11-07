@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DIVISION_LABEL, type DivisionId } from "@/lib/divisions";
-import { dateAxisTicks, formatTrendTime, shortDateLabel, timeAxisTicks, type StationTrend, type TrendPoint } from "@/lib/progress-trend";
+import { dateAxisTicks, formatTrendTime, personalComparison, shortDateLabel, timeAxisTicks, type StationTrend, type TrendPoint } from "@/lib/progress-trend";
 
 export function TrainingChart({ trend, division }: { trend: StationTrend; division: DivisionId }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -74,9 +74,10 @@ export function TrainingChart({ trend, division }: { trend: StationTrend; divisi
           )),
         )}
       </svg>
+      <PersonalLines trend={trend} />
       <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
         {comparable.length > 0 ? <li className="text-primary">You</li> : null}
-        {trend.medianSeconds != null ? <li className="text-[#f0b429]">Median {formatTrendTime(trend.medianSeconds)}</li> : null}
+        {trend.medianSeconds != null ? <li className="text-[#f0b429]">Sample median {formatTrendTime(trend.medianSeconds)}</li> : null}
         {trend.series.some((item) => !item.comparable) ? <li>Other</li> : null}
       </ul>
       <div className="grid gap-2">
@@ -91,6 +92,20 @@ export function TrainingChart({ trend, division }: { trend: StationTrend; divisi
           <p className="text-muted-foreground">{point.detail}</p>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PersonalLines({ trend }: { trend: StationTrend }) {
+  const summary = personalComparison(trend);
+  if (!summary) return null;
+  return (
+    <div className="grid gap-1 text-[15px]">
+      {summary.lines.map((line) => <p key={line}>{line}</p>)}
+      <details className="text-[13px] text-muted-foreground">
+        <summary className="min-h-11 cursor-pointer">About your trend</summary>
+        <p className="pb-2">Same station, category, distance, and load only. Full-race splits are not compared with station-only or custom work. One split is not overall fitness. The dashed line is the published sample median, not a world average.</p>
+      </details>
     </div>
   );
 }

@@ -67,7 +67,13 @@ export function stationTrend(sessions: SavedSession[], division: DivisionId, key
     const comparable = official && session.input.sessionType !== "custom";
     const race = comparable && configurationFor(session.input).raceEligible;
     const signature = workloadSignature(segment);
-    const seriesKey = comparable ? "official" : signature == null ? `unknown:${session.id}` : `${session.input.sessionType}:${signature}`;
+    const seriesKey = comparable
+      ? race
+        ? "official:race"
+        : "official:isolated"
+      : signature == null
+        ? `unknown:${session.id}`
+        : `${session.input.sessionType}:${signature}`;
     const context = comparable ? (race ? "race" : "isolated") : "other";
     const detail = comparable
       ? race
@@ -110,6 +116,88 @@ export function stationTrend(sessions: SavedSession[], division: DivisionId, key
     medianSeconds,
     medianLabel: medianSeconds == null ? null : BENCHMARK_LABEL,
   };
+}
+
+export interface PersonalComparison {
+  group: string;
+  count: number;
+  versusPrevious: "faster" | "slower" | "same" | "none";
+  deltaSeconds: number | null;
+  percent: number | null;
+  versusBest: "best" | "tied" | "slower" | "none";
+  lines: string[];
+}
+
+function gapLabel(seconds: number): string {
+  const abs = Math.abs(Math.round(seconds));
+  if (abs < 60) return `${abs}s`;
+  return formatDuration(abs);
+}
+
+/** Positive percent means the latest time is faster. Null when the earlier time is zero. */
+export function fasterPercent(previousSeconds: number, latestSeconds: number): number | null {
+  if (!Number.isFinite(previousSeconds) || !Number.isFinite(latestSeconds) || previousSeconds <= 0) return null;
+  return Math.round(((previousSeconds - latestSeconds) / previousSeconds) * 100);
+}
+
+/** Chronological points already limited to one like-for-like group. */
+export function compareChronological(points: Array<{ seconds: number }>, group: string, comparable = true): PersonalComparison | null {
+  const latest = points[points.length - 1];
+  if (!latest || !Number.isFinite(latest.seconds)) return null;
+  const count = points.length;
+  const bestSeconds = Math.min(...points.map((item) => item.seconds));
+  const bestCount = points.filter((item) => item.seconds === bestSeconds).length;
+  const previous = count >= 2 ? points[count - 2] : null;
+  let versusPrevious: PersonalComparison["versusPrevious"] = "none";
+  let deltaSeconds: number | null = null;
+  let percent: number | null = null;
+  const lines = [group];
+  if (!previous || !comparable || !Number.isFinite(previous.seconds)) {
+    lines.push("First time in this group.");
+  } else {
+    deltaSeconds = Math.abs(previous.seconds - latest.seconds);
+    percent = fasterPercent(previous.seconds, latest.seconds);
+    if (latest.seconds < previous.seconds) versusPrevious = "faster";
+    else if (latest.seconds > previous.seconds) versusPrevious = "slower";
+    else versusPrevious = "same";
+    const change = versusPrevious === "same"
+      ? "Same as last time."
+      : `${gapLabel(deltaSeconds)} ${versusPrevious} than last time${percent == null || percent === 0 ? "" : ` · ${Math.abs(percent)}%`}.`;
+    lines.push(change);
+  }
+  let versusBest: PersonalComparison["versusBest"] = "none";
+  if (count >= 2 && comparable && Number.isFinite(bestSeconds)) {
+    if (latest.seconds === bestSeconds && bestCount === 1) {
+      versusBest = "best";
+      lines.push("Best so far.");
+    } else if (latest.seconds === bestSeconds) {
+      versusBest = "tied";
+      lines.push("Tied your best.");
+    } else {
+      versusBest = "slower";
+      lines.push(`${gapLabel(latest.seconds - bestSeconds)} slower than your best.`);
+    }
+  }
+  return { group, count, versusPrevious, deltaSeconds, percent, versusBest, lines };
+}
+
+export function personalComparison(trend: StationTrend): PersonalComparison | null {
+  const latest = trend.points[trend.points.length - 1];
+  if (!latest) return null;
+  const groupPoints = trend.series.find((item) => item.key === latest.seriesKey)?.points ?? [latest];
+  const group = latest.context === "race"
+    ? "Full-race splits"
+    : latest.context === "isolated"
+      ? "Station-only splits"
+      : latest.seriesKey.startsWith("unknown:")
+        ? "Unmatched effort"
+        : latest.sessionType === "custom"
+          ? "Same custom load"
+          : "Same load";
+  const summary = compareChronological(groupPoints, group, !latest.seriesKey.startsWith("unknown:"));
+  if (!summary) return null;
+  if (trend.series.length > 1) summary.lines.push("Other efforts stay separate.");
+  return summary;
 }
 
 export function formatTrendTime(seconds: number): string {
