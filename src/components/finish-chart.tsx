@@ -1,5 +1,6 @@
 "use client";
 
+import { compareChronological } from "@/lib/progress-trend";
 import { formatDuration } from "@/lib/time";
 
 export function FinishChart({ points }: { points: Array<{ id: string; sessionDate: string; seconds: number }> }) {
@@ -23,8 +24,19 @@ export function FinishChart({ points }: { points: Array<{ id: string; sessionDat
   const yAt = (seconds: number) => pad + ((high - seconds) / (high - low)) * (height - pad * 2);
   const line = points.map((point, index) => `${xAt(index)},${yAt(point.seconds)}`).join(" ");
 
+  const summary = compareChronological(points, "Full-race finishes");
+
   return (
-    <div>
+    <div className="grid gap-2">
+      {summary ? (
+        <div className="grid gap-1 text-[15px]">
+          {summary.lines.map((line) => <p key={line}>{line}</p>)}
+          <details className="text-[13px] text-muted-foreground">
+            <summary className="min-h-11 cursor-pointer">About finish times</summary>
+            <p className="pb-2">Complete full-race finishes in this category only. This is not a sample median and not overall fitness.</p>
+          </details>
+        </div>
+      ) : null}
       <svg viewBox={`0 0 ${width} ${height}`} role="img" className="h-52 w-full">
         <title>Official full-race finish times</title>
         <line x1={pad} x2={width - pad} y1={pad} y2={pad} className="stroke-border" strokeWidth="1" />
