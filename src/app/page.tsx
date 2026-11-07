@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDevice } from "@/components/device-context";
-import { APP_NAME, DIVISION_IDS, DIVISION_LABEL, type DivisionId } from "@/lib/divisions";
+import { APP_NAME, APP_TAGLINE, DIVISION_IDS, DIVISION_LABEL, type DivisionId } from "@/lib/divisions";
 import { LOCAL_LOCK_NOTICE } from "@/lib/local-lock";
 
 export default function HomePage() {
@@ -43,6 +43,7 @@ export default function HomePage() {
     <main className="mx-auto grid min-h-dvh max-w-lg gap-6 px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div>
         <h1 className="text-[34px] leading-tight font-bold">{APP_NAME}</h1>
+        <p className="mt-1 max-w-full text-[15px] leading-5 text-muted-foreground">{APP_TAGLINE}</p>
         <p className="mt-2 text-[17px] text-muted-foreground">Name and category.</p>
       </div>
       {device.unreadable ? (

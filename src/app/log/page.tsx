@@ -5,6 +5,7 @@ import { Fold } from "@/components/fold";
 import { useGuidance } from "@/components/log-insights";
 import { useDevice } from "@/components/device-context";
 import { buttonVariants } from "@/components/ui/button";
+import { APP_TAGLINE } from "@/lib/divisions";
 import { cn } from "@/lib/utils";
 
 export default function TodayPage() {
@@ -18,7 +19,10 @@ function TodayBody({ profile }: { profile: NonNullable<ReturnType<typeof useDevi
 
   return (
     <div className="grid gap-5">
-      <h1 className="text-[34px] leading-tight font-bold">Today</h1>
+      <div>
+        <h1 className="text-[34px] leading-tight font-bold">Today</h1>
+        <p className="mt-1 max-w-full text-[15px] leading-5 text-muted-foreground">{APP_TAGLINE}</p>
+      </div>
       <Link href="/log/new" className={cn(buttonVariants(), "h-14 text-[20px]")}>Log a workout</Link>
       <Fold title="Training tips">
         <p className="font-semibold">{guidance.day.title}</p>
