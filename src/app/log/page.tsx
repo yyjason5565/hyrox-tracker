@@ -21,7 +21,7 @@ function TodayBody({ profile }: { profile: NonNullable<ReturnType<typeof useDevi
     <div className="grid gap-5">
       <div>
         <h1 className="text-[34px] leading-tight font-bold">Today</h1>
-        <p className="mt-1 max-w-full text-[15px] leading-5 text-muted-foreground">{APP_TAGLINE}</p>
+        <p className="mt-1 max-w-full text-[22px] leading-7 text-muted-foreground">{APP_TAGLINE}</p>
       </div>
       <Link href="/log/new" className={cn(buttonVariants(), "h-14 text-[20px]")}>Log a workout</Link>
       <Fold title="Training tips">

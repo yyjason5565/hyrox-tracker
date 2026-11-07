@@ -25,8 +25,12 @@ test("extra sections stay named and closed until opened", () => {
 
 test("onboarding asks for a name and a race category", () => {
   const page = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
+  const today = readFileSync(new URL("../src/app/log/page.tsx", import.meta.url), "utf8");
   assert.equal(page.includes("Input your name and select a race category"), true);
   assert.equal(page.includes("Name and category."), false);
+  assert.equal(page.includes("text-[22px]"), true);
+  assert.equal(today.includes("text-[22px]"), true);
+  assert.equal(page.includes("text-[34px]"), true);
 });
 
 test("storage stays local and the old keys remain", () => {

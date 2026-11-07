@@ -1,5 +1,5 @@
-:HL["/hyrox-tracker/_next/static/chunks/17ena76vz2o9v.css","style"]
+:HL["/hyrox-tracker/_next/static/chunks/1qhyaqn6hqh7b.css","style"]
 3:[["children",{"s":"__PAGE__","h":160}]]
 2:[["children",{"s":"edit","h":96,"c":"$Q3"}]]
 1:[["children",{"s":"log","h":96,"c":"$Q2"}]]
-0:{"b":"R1GL5-VTavWRfHQHxIBs9","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"txE2fsB0g9Tyszg4_FA1f","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
