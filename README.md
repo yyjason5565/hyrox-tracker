@@ -1,6 +1,8 @@
-# Lane Ledger
+# RaceForge
 
-HYROX training tracker for Men’s and Women’s Singles Open. The name of the app is Lane Ledger. Each person’s results stay in the browser on that device. There is no account, no server, and no sync.
+HYROX training tracker for Men’s and Women’s Singles Open. The public site stays [https://yyjason5565.github.io/hyrox-tracker/](https://yyjason5565.github.io/hyrox-tracker/). Each person’s results stay in the browser on that device. There is no account and no server.
+
+Logs saved under the earlier name remain on the device. The browser storage key is still `lane-ledger.device.v1`, and backup files still use the format `lane-ledger-backup`, so older downloads import without a rename.
 
 Only Men’s Singles Open and Women’s Singles Open are included. Pro, doubles, relay, mixed, and age-group categories are not.
 

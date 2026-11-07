@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataWarning } from "@/components/data-warning";
 import { useDevice } from "@/components/device-context";
-import { APP_DEFINITION, DIVISION_IDS, DIVISION_LABEL, LOAD_STATION_KEYS, SPEC_SEASON, standardDetail, type DivisionId } from "@/lib/divisions";
+import { APP_DEFINITION, APP_NAME, DIVISION_IDS, DIVISION_LABEL, LOAD_STATION_KEYS, SPEC_SEASON, standardDetail, type DivisionId } from "@/lib/divisions";
 import { LOCAL_LOCK_NOTICE } from "@/lib/local-lock";
 import { SEGMENT_BY_KEY } from "@/lib/segments";
 
@@ -46,7 +46,7 @@ export default function HomePage() {
       <DataWarning />
       <div>
         <p className="text-sm font-medium tracking-wide text-primary uppercase">On this device</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">Lane Ledger</h1>
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight">{APP_NAME}</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           {APP_DEFINITION}. Each person chooses Men’s Singles Open or Women’s Singles Open. Sessions stay on this device only. Other HYROX divisions are not included.
         </p>

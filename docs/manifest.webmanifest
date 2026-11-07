@@ -1,6 +1,6 @@
 {
-  "name": "Lane Ledger",
-  "short_name": "Lane Ledger",
+  "name": "RaceForge",
+  "short_name": "RaceForge",
   "description": "HYROX training tracker for Men’s and Women’s Singles Open",
   "start_url": ".",
   "display": "standalone",

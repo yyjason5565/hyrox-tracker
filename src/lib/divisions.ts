@@ -1,6 +1,9 @@
 import { SEGMENT_BY_KEY, type OfficialWorkload, type SegmentKey } from "./segments";
 
-/** Parent-approved product definition. Lane Ledger is the name; this is the scope. */
+/** Visible product name. Persistence keys and backup format stay lane-ledger. */
+export const APP_NAME = "RaceForge";
+
+/** Parent-approved product definition. RaceForge is the name; this is the scope. */
 export const APP_DEFINITION = "HYROX training tracker for Men\u2019s and Women\u2019s Singles Open";
 
 export const DIVISION_IDS = ["men_open", "women_open"] as const;

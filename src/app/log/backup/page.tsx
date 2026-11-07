@@ -54,7 +54,7 @@ export default function BackupPage() {
     <div className="grid max-w-xl gap-4">
       <h1 className="text-3xl font-semibold tracking-tight">Backup</h1>
       <DataWarning />
-      <p className="text-sm text-muted-foreground">Export is a JSON file for this profile. Import adds those sessions to the profile you choose. There is no online account to attach them to.</p>
+      <p className="text-sm text-muted-foreground">Export is a JSON file for this profile. Import adds those sessions to the profile you choose. There is no online account to attach them to. Older files that use the existing backup format still import.</p>
       <Button type="button" className="h-11" onClick={download}>Download this profile</Button>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={asNew} onChange={(event) => setAsNew(event.target.checked)} />
