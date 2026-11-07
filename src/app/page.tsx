@@ -44,7 +44,7 @@ export default function HomePage() {
       <div>
         <h1 className="text-[34px] leading-tight font-bold">{APP_NAME}</h1>
         <p className="mt-1 max-w-full text-[15px] leading-5 text-muted-foreground">{APP_TAGLINE}</p>
-        <p className="mt-2 text-[17px] text-muted-foreground">Name and category.</p>
+        <p className="mt-2 max-w-full text-[17px] leading-6 text-muted-foreground">Input your name and select a race category</p>
       </div>
       {device.unreadable ? (
         <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">

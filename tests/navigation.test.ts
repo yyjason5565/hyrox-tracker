@@ -23,6 +23,12 @@ test("extra sections stay named and closed until opened", () => {
   assert.equal(source.includes("open="), false);
 });
 
+test("onboarding asks for a name and a race category", () => {
+  const page = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
+  assert.equal(page.includes("Input your name and select a race category"), true);
+  assert.equal(page.includes("Name and category."), false);
+});
+
 test("storage stays local and the old keys remain", () => {
   assert.equal(DEVICE_STORAGE_KEY, "lane-ledger.device.v1");
   assert.equal(BACKUP_FORMAT, "lane-ledger-backup");
