@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useDevice } from "@/components/device-context";
-import { DIVISION_LABEL } from "@/lib/divisions";
+import { APP_NAME, DIVISION_LABEL } from "@/lib/divisions";
 
 const LINKS = [
   { href: "/log", label: "Log" },
@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-full">
       <header className="border-b border-primary/50 bg-background/90">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/log" className="shrink-0 whitespace-nowrap text-sm font-semibold tracking-tight sm:text-base">Lane Ledger</Link>
+          <Link href="/log" className="shrink-0 whitespace-nowrap text-sm font-semibold tracking-tight sm:text-base">{APP_NAME}</Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="max-w-44 truncate text-muted-foreground">{device.active.name}{device.active.division ? ` · ${DIVISION_LABEL[device.active.division]}` : ""}</span>
             <Link href="/log/account" className="underline-offset-4 hover:underline">Profile</Link>
