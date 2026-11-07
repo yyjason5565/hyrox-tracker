@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { DataWarning } from "@/components/data-warning";
+import { DeviceNotice } from "@/components/data-warning";
 import { useDevice } from "@/components/device-context";
 import { exportProfile } from "@/lib/device-store";
 
@@ -52,8 +52,8 @@ export default function BackupPage() {
 
   return (
     <div className="grid max-w-xl gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Backup</h1>
-      <DataWarning />
+      <h1 className="text-[34px] leading-tight font-bold">Backup</h1>
+      <DeviceNotice />
       <p className="text-sm text-muted-foreground">Export is a JSON file for this profile. Import adds those sessions to the profile you choose. There is no online account to attach them to. Older files that use the existing backup format still import.</p>
       <Button type="button" className="h-11" onClick={download}>Download this profile</Button>
       <label className="flex items-center gap-2 text-sm">

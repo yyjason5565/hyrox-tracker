@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { FOLDED_SECTIONS } from "../src/components/fold.tsx";
+import { DEVICE_NOTICE } from "../src/components/data-warning.tsx";
+import { DEVICE_STORAGE_KEY } from "../src/lib/device-store.ts";
+import { BACKUP_FORMAT } from "../src/lib/segments.ts";
+import { TAB_ITEMS, showTabBar } from "../src/lib/navigation.ts";
+
+test("tabs are Today, Log, Progress, and Profile, and forms hide the tab bar", () => {
+  assert.deepEqual(TAB_ITEMS.map((tab) => tab.label), ["Today", "Log", "Progress", "Profile"]);
+  assert.equal(showTabBar("/log"), true);
+  assert.equal(showTabBar("/log/history/"), true);
+  assert.equal(showTabBar("/log/new"), false);
+  assert.equal(showTabBar("/log/edit/"), false);
+});
+
+test("extra sections stay named and closed until opened", () => {
+  assert.deepEqual([...FOLDED_SECTIONS], ["Training tips", "Benchmarks", "Food & recovery"]);
+  const source = readFileSync(new URL("../src/components/fold.tsx", import.meta.url), "utf8");
+  assert.equal(source.includes("<details"), true);
+  assert.equal(source.includes("<details open"), false);
+  assert.equal(source.includes("open="), false);
+});
+
+test("storage stays local and the old keys remain", () => {
+  assert.equal(DEVICE_STORAGE_KEY, "lane-ledger.device.v1");
+  assert.equal(BACKUP_FORMAT, "lane-ledger-backup");
+  assert.match(DEVICE_NOTICE, /this device/i);
+  assert.equal(/sign in|google|sync/i.test(DEVICE_NOTICE), false);
+});

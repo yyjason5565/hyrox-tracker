@@ -1,9 +1,6 @@
-export function DataWarning() {
-  return (
-    <aside className="rounded-xl bg-accent px-4 py-3 text-sm text-accent-foreground">
-      Sessions stay in this browser on this device. RaceForge has no account and no server, and nothing is synced.
-      Clearing this site’s data, using private browsing, or switching browsers removes the log unless you exported a JSON backup.
-      Someone else who opens the same link starts with an empty tracker of their own.
-    </aside>
-  );
+export const DEVICE_NOTICE =
+  "Workouts stay on this device. There is no account and no sign-in. Export a backup from Profile if you want a copy.";
+
+export function DeviceNotice() {
+  return <p className="px-1 text-center text-[13px] leading-5 text-muted-foreground">{DEVICE_NOTICE}</p>;
 }

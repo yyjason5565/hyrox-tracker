@@ -89,7 +89,68 @@ export function LogInsights({ profile }: { profile: Profile }) {
   );
 }
 
-function BenchmarkPanel({
+export function NutritionSection({ profile }: { profile: Profile }) {
+  const protein = proteinRangeGrams(profile.training.bodyMassKg);
+  return (
+    <section className="ios-group px-4 py-4 text-[15px] leading-6">
+      <h2 className="text-[17px] font-semibold">Fuel and recovery</h2>
+      <p className="mt-2 text-muted-foreground">{NUTRITION_DISCLAIMER}</p>
+      <p className="mt-2">{goalNote(profile.training.goal)}</p>
+      <ul className="mt-2 grid gap-2">
+        <li>Drink to thirst and to your own sweat. In heat, drink earlier and more often, and do not overdrink.</li>
+        <li>Sodium sweets are not a universal fix. A cramp does not prove you need sodium.</li>
+        <li>For sessions past about 90 minutes, familiar carbohydrate during the session is often about 30–60 g per hour. That is a general range, not a personal prescription.</li>
+        <li>Spread protein through the day, then replace carbohydrate after harder work.</li>
+      </ul>
+      {protein ? (
+        <p className="mt-2">From the {profile.training.bodyMassKg} kg saved here, a general exercising-adult range is about {protein.low}–{protein.high} g of protein a day. Not a prescription and not a calorie target.</p>
+      ) : (
+        <p className="mt-2">Leave body mass blank and no protein grams are shown. No calorie target is calculated.</p>
+      )}
+      <ul className="mt-3 grid gap-2 text-[13px]">
+        {NUTRITION_SOURCES.map((source) => (
+          <li key={source.url}><a className="text-primary underline" href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function useGuidance(profile: Profile) {
+  const device = useDevice();
+  const today = todayInKualaLumpur();
+  const guidance = useMemo(() => {
+    const sessions = profile.sessions.map((session) => ({
+      id: session.id,
+      division: session.input.division,
+      sessionType: session.input.sessionType,
+      sessionDate: session.input.sessionDate,
+      raceEligible: configurationFor(session.input).raceEligible,
+      segments: session.input.segments,
+    }));
+    return guidanceFor({
+      division: profile.division,
+      training: profile.training,
+      hold: profile.focusHold,
+      today,
+      sessions,
+      recent: profile.sessions.map((session) => ({
+        sessionDate: session.input.sessionDate,
+        rpe: session.input.rpe,
+        elapsedSec: session.input.actualElapsedSec,
+      })),
+    });
+  }, [profile, today]);
+
+  useEffect(() => {
+    if (!guidance.store) return;
+    device.setFocus(guidance.store);
+  }, [device, guidance.store]);
+
+  return guidance;
+}
+
+export function BenchmarkPanel({
   division,
   rows,
 }: {

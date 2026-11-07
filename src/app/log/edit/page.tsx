@@ -16,36 +16,32 @@ export default function EditSessionPage() {
   }, []);
 
   const saved = device.active?.sessions.find((session) => session.id === id) ?? null;
-  if (!id) return <p>Loading session…</p>;
+  if (!id) return <p className="p-4">Loading…</p>;
   if (!saved) {
     return (
-      <div>
-        <p>That session is not in this profile.</p>
-        <Link href="/log" className="mt-3 inline-block text-sm underline">Back to this log</Link>
+      <div className="grid gap-3 p-4">
+        <p>Not in this athlete.</p>
+        <Link href="/log/history" className="inline-flex min-h-11 items-center text-primary">Log</Link>
       </div>
     );
   }
   const session = viewSession(saved);
 
   return (
-    <div className="grid gap-4">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Edit session</h1>
-        <p className="text-sm text-muted-foreground">{session.sessionDate}</p>
-        {session.configuration.raceEligible ? (
-          <p className="mt-2 text-sm text-primary">This session counts as an official full race.</p>
-        ) : (
-          <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
-            {session.configuration.reasons.slice(0, 6).map((reason) => <li key={reason}>{reason}</li>)}
-          </ul>
-        )}
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-2 pt-[env(safe-area-inset-top)]">
+        <Link href="/log/history" className="inline-flex min-h-11 items-center px-2 text-[17px] text-primary">Cancel</Link>
+        <h1 className="text-[17px] font-semibold">Edit</h1>
+        <button form="workout-form" type="submit" className="inline-flex min-h-11 items-center px-2 text-[17px] font-semibold text-primary">Save</button>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <SessionForm
+          initial={draftFromSession(session)}
+          sessionId={session.id}
+          onSave={save}
+          onDelete={(sessionId) => device.removeSession(sessionId)}
+        />
       </div>
-      <SessionForm
-        initial={draftFromSession(session)}
-        sessionId={session.id}
-        onSave={save}
-        onDelete={(sessionId) => device.removeSession(sessionId)}
-      />
     </div>
   );
 }
