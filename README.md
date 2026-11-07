@@ -1,6 +1,8 @@
 # Lane Ledger
 
-A static training log for men’s open singles sessions. Each person’s results stay in the browser on that device. There is no account, no server, and no sync.
+HYROX training tracker for Men’s and Women’s Singles Open. The name of the app is Lane Ledger. Each person’s results stay in the browser on that device. There is no account, no server, and no sync.
+
+Only Men’s Singles Open and Women’s Singles Open are included. Pro, doubles, relay, mixed, and age-group categories are not.
 
 This is the same idea as a personal health log kept on one phone: opening the link on another device starts empty. Clearing the browser’s site data deletes the log unless a JSON backup was saved.
 
@@ -35,20 +37,25 @@ npm run zip:pages
 
 That writes `lane-ledger-pages.zip`: a root-base static build (`BASE_PATH` empty) plus `.nojekyll`, so GitHub Pages will not hide the `_next` files. Serve the zip’s contents from the root of a static host. It is not a published URL.
 
+## What this tracker does
+
+- Each profile and each session stores Men’s Singles Open or Women’s Singles Open. Official 2026/27 loads come from the [singles rulebook](https://maintain.hyrox.com/rulebooks/HYROX_RulebookSingles_EN.pdf). New people choose their own category. A week, body mass, and goal stay empty until that person sets them.
+- Official full-race bests are separate for each category. A result counts only when every run and station is timed at that category’s distances, reps, and loads, and Roxzone/transitions and penalties are entered. `0:00` means none were measured. A blank is not zero. The full elapsed time is the sum of the 16 splits plus those extras. A stopwatch, if you enter one, is shown beside that sum and is not the best.
+- Station comparison uses the label “Published multi-venue sample median (2025/26)” from [this independent sample](https://userivo.app/guides/hyrox-station-times). It is not an official world average. Men Open sample 174,215. Women Open sample 98,478. Custom and shortened work is not turned into a race split, and the two categories are not compared with each other.
+- Daily suggestions follow the week you save. They do not add a hard station block on top of an easy, recovery, or strength day. Fuel notes are general education with source links, not a diet or a calorie plan.
+- Older logs that have no category were Men’s Singles Open, which was the only category at the time. Those sessions are kept. You can change a session’s category when you edit it.
+
 ## GitHub Pages
 
-The authorized repository is [yyjason5565/hyrox-tracker](https://github.com/yyjason5565/hyrox-tracker). Do not deploy this project to the HealthLog repository.
+The live site is [https://yyjason5565.github.io/hyrox-tracker/](https://yyjason5565.github.io/hyrox-tracker/). Pages publishes the `docs/` folder on `main`. That is the only publishing source.
 
-`docs/` on `main` is a static build with `BASE_PATH=/hyrox-tracker` and a `.nojekyll` file. It contains the site only: no training records and no passphrases.
-
-After that branch is pushed, enable Pages from the `main` branch, folder `/docs`:
+`docs/` is a static build with `BASE_PATH=/hyrox-tracker` and a `.nojekyll` file. It contains the site only: no training records and no passphrases.
 
 ```bash
-gh api --method POST repos/yyjason5565/hyrox-tracker/pages \
-  -f "source[branch]=main" \
-  -f "source[path]=/docs"
+BASE_PATH=/hyrox-tracker npm run build
+rm -rf docs
+cp -a out/. docs/
+touch docs/.nojekyll
 ```
 
-The public site is then `https://yyjason5565.github.io/hyrox-tracker/`.
-
-`.github/workflows/pages.yml` can build and deploy from Actions instead. Use one Pages source, not both. The workflow refuses to run in a repository named `healthlog`.
+`.github/workflows/pages.yml` runs tests and the same static build. It does not deploy. A second deploy from Actions would compete with the `main` / `docs` source. The workflow refuses to run in a repository named `healthlog`. Do not deploy this project to the HealthLog repository.

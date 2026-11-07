@@ -32,8 +32,11 @@ export default function HistoryPage() {
             <li key={row.id}>
               <Link href={`/log/edit/?id=${row.id}`} className="block rounded-xl bg-card px-3 py-3 ring-1 ring-foreground/10">
                 <span className="flex items-center justify-between gap-3">
-                  <span>{row.sessionDate} · {row.sessionType}{row.configuration.raceEligible ? " · official" : ""}{row.configuration.modified ? " · modified" : ""}</span>
-                  <span className="font-mono">{row.totals.finishSeconds != null ? formatDuration(row.totals.finishSeconds) : "—"}</span>
+                  <span>{row.sessionDate} · {row.divisionLabel} · {row.sessionType}{row.configuration.raceEligible ? " · official" : ""}{row.configuration.modified ? " · modified" : ""}</span>
+                  <span className="text-right">
+                    <span className="block font-mono">{row.totals.totalSeconds != null ? formatDuration(row.totals.totalSeconds) : "—"}</span>
+                    <span className="block text-xs text-muted-foreground">{row.totals.totalLabel}</span>
+                  </span>
                 </span>
                 <span className="mt-1 block text-sm text-muted-foreground">
                   Runs {row.totals.runs.timedSeconds != null ? formatDuration(row.totals.runs.timedSeconds) : "—"}

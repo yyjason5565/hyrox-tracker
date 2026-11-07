@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useDevice } from "@/components/device-context";
+import { DIVISION_LABEL } from "@/lib/divisions";
 
 const LINKS = [
   { href: "/log", label: "Log" },
@@ -30,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/log" className="font-semibold tracking-tight">Lane Ledger</Link>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-muted-foreground">{device.active.name}</span>
+            <span className="max-w-44 truncate text-muted-foreground">{device.active.name}{device.active.division ? ` · ${DIVISION_LABEL[device.active.division]}` : ""}</span>
             <Link href="/log/account" className="underline-offset-4 hover:underline">Profile</Link>
             <button type="button" className="underline-offset-4 hover:underline" onClick={() => { device.lockScreen(); router.push("/"); }}>
               {device.active.lock ? "Lock" : "Profiles"}

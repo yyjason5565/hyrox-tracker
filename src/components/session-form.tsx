@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RpeHelp } from "@/components/rpe-help";
+import { DIVISION_IDS, DIVISION_LABEL, standardDetail, type DivisionId } from "@/lib/divisions";
 import type { DecoratedSegment } from "@/lib/quantities";
 import { configurationFor, decorateSegment, formatPace, segmentPace, summarize } from "@/lib/quantities";
 import { SEGMENTS, type SegmentDef, type SegmentKey, type SessionType } from "@/lib/segments";
@@ -28,8 +30,8 @@ interface SegmentForm {
   performedHeight: string;
 }
 
-function blankSegment(def: SegmentDef): SegmentForm {
-  const target = officialTarget(def.key);
+function blankSegment(def: SegmentDef, division: DivisionId): SegmentForm {
+  const target = officialTarget(def.key, division);
   return {
     skipped: false,
     time: "",
@@ -115,6 +117,7 @@ function hasPerformed(value: ReturnType<typeof quantity>): boolean {
 
 export interface SessionDraft {
   sessionDate: string;
+  division: DivisionId;
   sessionType: SessionType;
   actualElapsed: string;
   transitions: string;
@@ -124,24 +127,62 @@ export interface SessionDraft {
   segments: Record<SegmentKey, SegmentForm>;
 }
 
-export function emptyDraft(today: string): SessionDraft {
+function sameNumber(raw: string, value: number | null | undefined): boolean {
+  if (value == null) return raw.trim() === "";
+  return raw.trim() !== "" && Number(raw) === value;
+}
+
+function matchesOfficial(form: SegmentForm, division: DivisionId, def: SegmentDef): boolean {
+  const target = officialTarget(def.key, division);
+  return (
+    sameNumber(form.targetMeters, target.meters) &&
+    sameNumber(form.targetReps, target.reps) &&
+    sameNumber(form.targetLoad, target.loadKg) &&
+    sameNumber(form.targetA, target.implementsKg?.[0]) &&
+    sameNumber(form.targetB, target.implementsKg?.[1]) &&
+    sameNumber(form.targetHeight, target.heightM)
+  );
+}
+
+export function emptyDraft(today: string, division: DivisionId): SessionDraft {
   return {
     sessionDate: today,
+    division,
     sessionType: "full",
     actualElapsed: "",
     transitions: "",
     penalties: "",
     rpe: "",
     notes: "",
-    segments: Object.fromEntries(SEGMENTS.map((segment) => [segment.key, blankSegment(segment)])) as Record<
+    segments: Object.fromEntries(SEGMENTS.map((segment) => [segment.key, blankSegment(segment, division)])) as Record<
       SegmentKey,
       SegmentForm
     >,
   };
 }
 
+function withDivision(draft: SessionDraft, division: DivisionId): SessionDraft {
+  if (draft.division === division) return draft;
+  const segments = { ...draft.segments };
+  for (const def of SEGMENTS) {
+    const current = segments[def.key];
+    if (!matchesOfficial(current, draft.division, def)) continue;
+    const next = blankSegment(def, division);
+    segments[def.key] = { ...current, ...{
+      targetMeters: next.targetMeters,
+      targetReps: next.targetReps,
+      targetLoad: next.targetLoad,
+      targetA: next.targetA,
+      targetB: next.targetB,
+      targetHeight: next.targetHeight,
+    } };
+  }
+  return { ...draft, division, segments };
+}
+
 export function draftFromSession(session: {
   sessionDate: string;
+  division: DivisionId;
   sessionType: SessionType;
   actualElapsed: string | null;
   transitions: string | null;
@@ -150,7 +191,8 @@ export function draftFromSession(session: {
   notes: string;
   segments: DecoratedSegment[];
 }): SessionDraft {
-  const draft = emptyDraft(session.sessionDate);
+  const draft = emptyDraft(session.sessionDate, session.division);
+  draft.division = session.division;
   draft.sessionType = session.sessionType;
   draft.actualElapsed = session.actualElapsed ?? "";
   draft.transitions = session.transitions ?? "";
@@ -177,6 +219,7 @@ function toWire(draft: SessionDraft) {
   });
   return {
     sessionDate: draft.sessionDate,
+    division: draft.division,
     sessionType: draft.sessionType,
     actualElapsed: draft.actualElapsed.trim() || null,
     transitions: draft.transitions.trim() || null,
@@ -231,6 +274,7 @@ export function SessionForm({
     if (!parsed.ok) return { ok: false as const, error: parsed.error, fieldErrors: parsed.fieldErrors };
     const math = {
       sessionType: parsed.value.sessionType,
+      division: parsed.value.division,
       actualElapsedSec: parsed.value.actualElapsedSec,
       transitionsSec: parsed.value.transitionsSec,
       penaltiesSec: parsed.value.penaltiesSec,
@@ -276,10 +320,22 @@ export function SessionForm({
   return (
     <form className="grid gap-5" onSubmit={onSubmit}>
       <section className="grid gap-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm">
             <span>Date (Asia/Kuala_Lumpur)</span>
             <Input type="date" value={draft.sessionDate} onChange={(event) => setDraft({ ...draft, sessionDate: event.target.value })} required />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span>Category</span>
+            <select
+              className="h-11 rounded-lg border border-input bg-transparent px-3"
+              value={draft.division}
+              onChange={(event) => setDraft((current) => withDivision(current, event.target.value as DivisionId))}
+            >
+              {DIVISION_IDS.map((division) => (
+                <option key={division} value={division}>{DIVISION_LABEL[division]}</option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1 text-sm">
             <span>Type</span>
@@ -293,9 +349,13 @@ export function SessionForm({
               <option value="custom">Custom</option>
             </select>
           </label>
-          <label className="grid gap-1 text-sm">
-            <span>RPE (optional)</span>
+          <div className="grid gap-1 text-sm">
+            <span className="flex items-center gap-2">
+              <label htmlFor="session-rpe">RPE (optional)</label>
+              <RpeHelp />
+            </span>
             <select
+              id="session-rpe"
               className="h-11 rounded-lg border border-input bg-transparent px-3"
               value={draft.rpe}
               onChange={(event) => setDraft({ ...draft, rpe: event.target.value })}
@@ -307,15 +367,15 @@ export function SessionForm({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="grid gap-1 text-sm">
-            <span>Actual elapsed</span>
-            <Input placeholder="mm:ss" value={draft.actualElapsed} onChange={(event) => setDraft({ ...draft, actualElapsed: event.target.value })} />
+            <span>Stopwatch (optional)</span>
+            <Input placeholder="mm:ss" aria-label="Optional stopwatch" value={draft.actualElapsed} onChange={(event) => setDraft({ ...draft, actualElapsed: event.target.value })} />
           </label>
           <label className="grid gap-1 text-sm">
-            <span>Transitions</span>
+            <span>Roxzone / transitions</span>
             <Input placeholder="blank or 0:00" value={draft.transitions} onChange={(event) => setDraft({ ...draft, transitions: event.target.value })} />
           </label>
           <label className="grid gap-1 text-sm">
@@ -323,6 +383,9 @@ export function SessionForm({
             <Input placeholder="blank or 0:00" value={draft.penalties} onChange={(event) => setDraft({ ...draft, penalties: event.target.value })} />
           </label>
         </div>
+        <p className="text-sm text-muted-foreground">
+          The total below is calculated from the splits. Blank Roxzone/transitions or penalties are not recorded, and 0:00 means you measured none. The stopwatch does not replace that total.
+        </p>
         <label className="grid gap-1 text-sm">
           <span>Notes</span>
           <Textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
@@ -345,9 +408,24 @@ export function SessionForm({
               Stations: {totals.stations.timedCount} timed
               {totals.stations.timedSeconds != null ? `, ${formatDuration(totals.stations.timedSeconds)}` : ""}
             </p>
-            <p>Finish: {totals.finishSeconds != null ? formatDuration(totals.finishSeconds) : "not enough recorded times"}</p>
-            <p>{preview.ok && preview.configuration.raceEligible ? "Counts toward official full-race bests." : "Not an official full-race result."}</p>
-            {preview.ok && preview.configuration.modified ? <p>Modified workload. Left out of official bests.</p> : null}
+            <p>
+              {totals.totalLabel}
+              {totals.totalSeconds != null ? `: ${formatDuration(totals.totalSeconds)}` : ""}
+            </p>
+            <p className="text-muted-foreground">
+              {totals.timedSegmentCount} timed, {totals.unrecordedCount} not recorded, {totals.skippedCount} skipped.
+            </p>
+            {totals.stopwatchSeconds != null ? (
+              <p>
+                Stopwatch {formatDuration(totals.stopwatchSeconds)}
+                {totals.stopwatchDifferenceSeconds != null
+                  ? `, ${formatDuration(totals.stopwatchDifferenceSeconds)} versus the calculated total`
+                  : ""}
+                . This is not the calculated total.
+              </p>
+            ) : null}
+            <p>{preview.ok && preview.configuration.raceEligible ? `Counts toward ${DIVISION_LABEL[draft.division]} full-race bests.` : "Not an official full-race result."}</p>
+            {preview.ok && preview.configuration.modified ? <p>Modified workload. Left out of official bests and the sample-median comparison.</p> : null}
           </div>
         ) : (
           <p>Fix the highlighted fields to see totals. Nothing is treated as zero while a field is blank.</p>
@@ -365,7 +443,7 @@ export function SessionForm({
               <div>
                 <p className="text-xs text-muted-foreground">{index + 1} · {def.kind === "run" ? "Run" : "Station"}</p>
                 <h2 className="text-lg font-semibold">{def.name}</h2>
-                <p className="text-sm text-muted-foreground">Open standard: {def.detail}</p>
+                <p className="text-sm text-muted-foreground">{DIVISION_LABEL[draft.division]}: {standardDetail(draft.division, def.key)}</p>
               </div>
               <label className="grid w-36 gap-1 text-sm">
                 <span>Time</span>

@@ -1,3 +1,4 @@
+import { officialWorkload, standardDetail, type DivisionId } from "./divisions";
 import {
   SEGMENT_BY_KEY,
   SEGMENTS,
@@ -28,6 +29,7 @@ export interface StoredSegment {
 
 export interface SessionMath {
   sessionType: SessionType;
+  division: DivisionId;
   actualElapsedSec: number | null;
   transitionsSec: number | null;
   penaltiesSec: number | null;
@@ -55,13 +57,28 @@ export interface StationTotals {
   timedSeconds: number | null;
 }
 
+export type TotalKind = "full" | "splits-only" | "partial" | "partial-session" | "custom" | "empty";
+
 export interface SessionTotals {
   runs: RunTotals;
   stations: StationTotals;
+  timedSegmentCount: number;
+  skippedCount: number;
+  unrecordedCount: number;
+  timedSplitSeconds: number | null;
   splitSumSeconds: number | null;
+  fullElapsedSeconds: number | null;
+  splitsOnlySeconds: number | null;
+  partialSubtotalSeconds: number | null;
+  completedSeconds: number | null;
   accountedSeconds: number | null;
+  totalKind: TotalKind;
+  totalLabel: string;
+  totalSeconds: number | null;
   finishSeconds: number | null;
-  finishSource: "actual" | "accounted" | null;
+  finishSource: "full" | null;
+  stopwatchSeconds: number | null;
+  stopwatchDifferenceSeconds: number | null;
   unaccountedSeconds: number | null;
 }
 
@@ -240,10 +257,10 @@ function planNote(segment: StoredSegment): string | null {
   return `${parts.join(". ")}.`;
 }
 
-function workloadMismatches(segment: StoredSegment): string[] {
+function workloadMismatches(segment: StoredSegment, division: DivisionId): string[] {
   const def = SEGMENT_BY_KEY[segment.key];
   const reasons: string[] = [];
-  const official = def.official;
+  const official = officialWorkload(division, segment.key);
   if (official.meters !== undefined) {
     const meters = effectiveMeters(segment);
     if (meters === null) reasons.push(`${def.name} has no distance recorded.`);
@@ -288,6 +305,10 @@ function workloadMismatches(segment: StoredSegment): string[] {
   return reasons;
 }
 
+export function segmentMatchesOfficial(segment: StoredSegment, division: DivisionId): boolean {
+  return workloadMismatches(segment, division).length === 0;
+}
+
 export function summarize(session: SessionMath): SessionTotals {
   let runTimedCount = 0;
   let runTimedSeconds = 0;
@@ -297,10 +318,23 @@ export function summarize(session: SessionMath): SessionTotals {
   let missingDistanceCount = 0;
   let stationTimedCount = 0;
   let stationTimedSeconds = 0;
+  let timedSegmentCount = 0;
+  let skippedCount = 0;
+  let unrecordedCount = 0;
+  let timedSplit = 0;
 
   for (const segment of session.segments) {
     const def = SEGMENT_BY_KEY[segment.key];
-    if (segment.status !== "timed" || segment.seconds === null) continue;
+    if (segment.status === "skipped") {
+      skippedCount += 1;
+      continue;
+    }
+    if (segment.status !== "timed" || segment.seconds === null) {
+      unrecordedCount += 1;
+      continue;
+    }
+    timedSegmentCount += 1;
+    timedSplit += segment.seconds;
     if (def.kind === "run") {
       runTimedCount += 1;
       runTimedSeconds += segment.seconds;
@@ -318,20 +352,46 @@ export function summarize(session: SessionMath): SessionTotals {
     }
   }
 
-  const allTimed = session.segments.every((segment) => segment.status === "timed" && segment.seconds !== null);
-  const splitSumSeconds = allTimed
-    ? session.segments.reduce((sum, segment) => sum + (segment.seconds ?? 0), 0)
-    : null;
-  const accountedSeconds =
-    splitSumSeconds !== null && session.transitionsSec !== null && session.penaltiesSec !== null
-      ? splitSumSeconds + session.transitionsSec + session.penaltiesSec
-      : null;
-  const finish =
-    session.actualElapsedSec !== null
-      ? { seconds: session.actualElapsedSec, source: "actual" as const }
-      : accountedSeconds !== null
-        ? { seconds: accountedSeconds, source: "accounted" as const }
-        : null;
+  const allTimed = timedSegmentCount === session.segments.length && session.segments.length > 0;
+  const extrasRecorded = session.transitionsSec !== null && session.penaltiesSec !== null;
+  const timedSplitSeconds = timedSegmentCount > 0 ? timedSplit : null;
+  const splitSumSeconds = allTimed ? timedSplit : null;
+  const fullElapsedSeconds =
+    allTimed && extrasRecorded ? timedSplit + (session.transitionsSec ?? 0) + (session.penaltiesSec ?? 0) : null;
+  const splitsOnlySeconds = allTimed && !extrasRecorded ? timedSplit : null;
+
+  let totalKind: TotalKind = "empty";
+  let totalLabel = "No timed splits yet";
+  let totalSeconds: number | null = null;
+  let partialSubtotalSeconds: number | null = null;
+  let completedSeconds: number | null = null;
+
+  if (session.sessionType === "custom" || session.sessionType === "partial") {
+    if (timedSplitSeconds !== null) {
+      totalKind = session.sessionType === "custom" ? "custom" : "partial-session";
+      totalLabel = session.sessionType === "custom" ? "Completed custom total" : "Completed partial total";
+      totalSeconds = timedSplitSeconds;
+      completedSeconds = timedSplitSeconds;
+    }
+  } else if (fullElapsedSeconds !== null) {
+    totalKind = "full";
+    totalLabel = "Full elapsed, including Roxzone/transitions and penalties";
+    totalSeconds = fullElapsedSeconds;
+  } else if (splitsOnlySeconds !== null) {
+    totalKind = "splits-only";
+    totalLabel = "Splits-only total; transitions/penalties not recorded";
+    totalSeconds = splitsOnlySeconds;
+  } else if (timedSplitSeconds !== null) {
+    totalKind = "partial";
+    totalLabel = "Partial subtotal, not a full finish";
+    totalSeconds = timedSplitSeconds;
+    partialSubtotalSeconds = timedSplitSeconds;
+  }
+
+  const stopwatchSeconds = session.actualElapsedSec;
+  const stopwatchDifferenceSeconds =
+    stopwatchSeconds !== null && totalSeconds !== null ? stopwatchSeconds - totalSeconds : null;
+  const finishSeconds = session.sessionType === "full" ? fullElapsedSeconds : null;
 
   return {
     runs: {
@@ -345,14 +405,24 @@ export function summarize(session: SessionMath): SessionTotals {
       timedCount: stationTimedCount,
       timedSeconds: stationTimedCount > 0 ? stationTimedSeconds : null,
     },
+    timedSegmentCount,
+    skippedCount,
+    unrecordedCount,
+    timedSplitSeconds,
     splitSumSeconds,
-    accountedSeconds,
-    finishSeconds: finish?.seconds ?? null,
-    finishSource: finish?.source ?? null,
-    unaccountedSeconds:
-      session.actualElapsedSec !== null && accountedSeconds !== null
-        ? session.actualElapsedSec - accountedSeconds
-        : null,
+    fullElapsedSeconds,
+    splitsOnlySeconds,
+    partialSubtotalSeconds,
+    completedSeconds,
+    accountedSeconds: fullElapsedSeconds,
+    totalKind,
+    totalLabel,
+    totalSeconds,
+    finishSeconds,
+    finishSource: finishSeconds !== null ? "full" : null,
+    stopwatchSeconds,
+    stopwatchDifferenceSeconds,
+    unaccountedSeconds: fullElapsedSeconds !== null && stopwatchSeconds !== null ? stopwatchSeconds - fullElapsedSeconds : null,
   };
 }
 
@@ -384,7 +454,7 @@ export function configurationFor(session: SessionMath): Configuration {
       reasons.push(`${def.name} was not recorded.`);
       continue;
     }
-    const mismatches = workloadMismatches(segment);
+    const mismatches = workloadMismatches(segment, session.division);
     if (mismatches.length > 0) {
       modified = true;
       reasons.push(...mismatches);
@@ -394,14 +464,14 @@ export function configurationFor(session: SessionMath): Configuration {
   const totals = summarize(session);
   if (session.sessionType === "full" && allTimed && !modified && totals.finishSeconds === null) {
     reasons.push(
-      "Add the actual elapsed time, or enter both transitions and penalties. Use 0:00 when there were none. Blank is unknown, not zero.",
+      "Enter Roxzone/transitions and penalties to complete the full elapsed time. Use 0:00 when there were none. Blank is not recorded, not zero. A stopwatch time is optional and is not the full elapsed time.",
     );
   }
 
   return { raceEligible: reasons.length === 0, modified, reasons };
 }
 
-export function decorateSegment(segment: StoredSegment): DecoratedSegment {
+export function decorateSegment(segment: StoredSegment, division?: DivisionId): DecoratedSegment {
   const def = SEGMENT_BY_KEY[segment.key];
   const pace = segmentPace(segment);
   const performed = toWireQuantity(segment, "performed");
@@ -409,7 +479,7 @@ export function decorateSegment(segment: StoredSegment): DecoratedSegment {
     key: segment.key,
     name: def.name,
     kind: def.kind,
-    detail: def.detail,
+    detail: division ? standardDetail(division, segment.key) : def.detail,
     status: segment.status,
     time: formatClock(segment.seconds),
     seconds: segment.seconds,
@@ -444,6 +514,7 @@ export function emptySegmentRecord(key: SegmentKey): StoredSegment {
 
 export function officialBests(
   sessions: Array<{ id: string; sessionDate: string; segments: StoredSegment[]; math: SessionMath }>,
+  division: DivisionId,
 ): { eligibleCount: number; finish: Mark | null; segments: Record<SegmentKey, Mark | null> } {
   const segmentMarks = Object.fromEntries(SEGMENTS.map((segment) => [segment.key, null])) as Record<
     SegmentKey,
@@ -461,7 +532,7 @@ export function officialBests(
 
   for (const session of sessions) {
     const configuration = configurationFor(session.math);
-    if (!configuration.raceEligible) continue;
+    if (session.math.division !== division || !configuration.raceEligible) continue;
     eligibleCount += 1;
     const totals = summarize(session.math);
     if (totals.finishSeconds !== null) {
@@ -480,10 +551,11 @@ export function officialBests(
 
 export function officialFinishSeries(
   sessions: Array<{ id: string; sessionDate: string; math: SessionMath }>,
+  division: DivisionId,
 ): Array<{ id: string; sessionDate: string; seconds: number }> {
   const points: Array<{ id: string; sessionDate: string; seconds: number }> = [];
   for (const session of sessions) {
-    if (!configurationFor(session.math).raceEligible) continue;
+    if (session.math.division !== division || !configurationFor(session.math).raceEligible) continue;
     const finish = summarize(session.math).finishSeconds;
     if (finish === null) continue;
     points.push({ id: session.id, sessionDate: session.sessionDate, seconds: finish });

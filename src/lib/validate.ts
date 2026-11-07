@@ -1,3 +1,4 @@
+import { isDivisionId, officialWorkload, type DivisionId } from "./divisions";
 import {
   QUANTITY_FIELDS,
   SEGMENT_BY_KEY,
@@ -21,6 +22,7 @@ import {
 export interface SessionInput {
   sessionDate: string;
   sessionType: SessionType;
+  division: DivisionId;
   actualElapsedSec: number | null;
   transitionsSec: number | null;
   penaltiesSec: number | null;
@@ -37,6 +39,7 @@ export interface FieldFailure {
 const SESSION_FIELDS = new Set([
   "sessionDate",
   "sessionType",
+  "division",
   "actualElapsed",
   "transitions",
   "penalties",
@@ -238,6 +241,10 @@ export function validateSessionBody(body: unknown, now = new Date()): { ok: true
     errors.sessionType = "Choose full, partial, or custom.";
   }
 
+  if (!isDivisionId(body.division)) {
+    errors.division = "Choose Men\u2019s Singles Open or Women\u2019s Singles Open.";
+  }
+
   const actual = parseTimeInput(body.actualElapsed ?? null, { allowZero: false, maxSeconds: clockMaxSeconds() });
   if (!actual.ok) errors.actualElapsed = actual.error;
   const transitions = parseTimeInput(body.transitions ?? null, { allowZero: true, maxSeconds: clockMaxSeconds() });
@@ -317,6 +324,7 @@ export function validateSessionBody(body: unknown, now = new Date()): { ok: true
     value: {
       sessionDate: sessionDate as string,
       sessionType: sessionType as SessionType,
+      division: body.division as DivisionId,
       actualElapsedSec: actual.ok ? actual.seconds : null,
       transitionsSec: transitions.ok ? transitions.seconds : null,
       penaltiesSec: penalties.ok ? penalties.seconds : null,
@@ -327,8 +335,8 @@ export function validateSessionBody(body: unknown, now = new Date()): { ok: true
   };
 }
 
-export function officialTarget(key: SegmentKey): WireQuantity {
-  const official = SEGMENT_BY_KEY[key].official;
+export function officialTarget(key: SegmentKey, division: DivisionId = "men_open"): WireQuantity {
+  const official = officialWorkload(division, key);
   const quantity: WireQuantity = {};
   if (official.meters !== undefined) quantity.meters = official.meters;
   if (official.reps !== undefined) quantity.reps = official.reps;
@@ -350,6 +358,7 @@ export interface WireSegmentInput {
 
 export function officialSegments(
   resolve: (key: SegmentKey) => { status: SegmentStatus; time: string | null; performed?: WireQuantity | null; target?: WireQuantity },
+  division: DivisionId = "men_open",
 ): WireSegmentInput[] {
   return SEGMENTS.map((segment) => {
     const choice = resolve(segment.key);
@@ -357,7 +366,7 @@ export function officialSegments(
       key: segment.key,
       status: choice.status,
       time: choice.time,
-      target: choice.target ?? officialTarget(segment.key),
+      target: choice.target ?? officialTarget(segment.key, division),
       performed: choice.performed ?? null,
     };
   });

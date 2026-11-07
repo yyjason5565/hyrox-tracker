@@ -1,0 +1,9 @@
+{
+  "name": "Lane Ledger",
+  "short_name": "Lane Ledger",
+  "description": "HYROX training tracker for Men’s and Women’s Singles Open",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3efe4",
+  "theme_color": "#f3efe4"
+}
