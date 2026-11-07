@@ -115,3 +115,31 @@ export function stationTrend(sessions: SavedSession[], division: DivisionId, key
 export function formatTrendTime(seconds: number): string {
   return formatDuration(seconds);
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function shortDateLabel(iso: string): string {
+  const [, month, day] = iso.split("-");
+  return `${MONTHS[Number(month) - 1]}${Number(day)}`;
+}
+
+/** Two to four readable times, always including the ends. */
+export function timeAxisTicks(seconds: number[]): number[] {
+  const unique = [...new Set(seconds.map((value) => Math.round(value)))].sort((a, b) => a - b);
+  if (unique.length === 0) return [];
+  if (unique.length === 1) return unique;
+  const min = unique[0];
+  const max = unique[unique.length - 1];
+  if (max - min < 20) return [min, max];
+  const middle = unique.length <= 4 ? unique.slice(1, -1) : [unique[Math.round((unique.length - 1) / 2)]];
+  const ticks = [min, ...middle.filter((value) => value - min >= 20 && max - value >= 20), max];
+  return [...new Set(ticks)].slice(0, 4);
+}
+
+/** First, middle, and last date when there are many, so labels do not collide. */
+export function dateAxisTicks(dates: string[]): string[] {
+  const unique = [...new Set(dates)].sort();
+  if (unique.length <= 3) return unique;
+  const middle = unique[Math.round((unique.length - 1) / 2)];
+  return [unique[0], middle, unique[unique.length - 1]].filter((date, index, list) => list.indexOf(date) === index);
+}

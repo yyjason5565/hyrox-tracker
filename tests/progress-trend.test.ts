@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addProfile, emptyDevice, saveSession, type SavedSession } from "../src/lib/device-store.ts";
-import { formatTrendTime, stationTrend } from "../src/lib/progress-trend.ts";
+import { dateAxisTicks, formatTrendTime, shortDateLabel, stationTrend, timeAxisTicks } from "../src/lib/progress-trend.ts";
 import { referenceMedianSeconds } from "../src/lib/benchmarks.ts";
 import { officialSegments, validateSessionBody } from "../src/lib/validate.ts";
 
@@ -72,6 +72,18 @@ test("a full station inside a partial workout is charted and comparable, but cus
   assert.equal(push.points.every((point) => point.comparable === false), true);
   assert.equal(push.medianSeconds, null);
   assert.equal(new Set(push.points.map((point) => point.seriesKey)).size, 3);
+});
+
+test("axis ticks stay sparse and readable", () => {
+  assert.equal(shortDateLabel("2026-04-01"), "Apr1");
+  assert.equal(shortDateLabel("2026-06-01"), "Jun1");
+  const dates = dateAxisTicks(["2026-04-01", "2026-05-01", "2026-06-01", "2026-07-01"]);
+  assert.deepEqual(dates.map(shortDateLabel), ["Apr1", "Jun1", "Jul1"]);
+  const ticks = timeAxisTicks([210, 300, 318, 320, 360]);
+  assert.ok(ticks.length >= 2 && ticks.length <= 4);
+  assert.equal(ticks[0], 210);
+  assert.equal(ticks[ticks.length - 1], 360);
+  assert.equal(formatTrendTime(ticks[0]), "3:30");
 });
 
 test("runs have no sample median", () => {

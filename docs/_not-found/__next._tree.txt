@@ -1,4 +1,4 @@
-:HL["/hyrox-tracker/_next/static/chunks/23k0pmt1n3rxz.css","style"]
+:HL["/hyrox-tracker/_next/static/chunks/3hmfy7jwaxz7f.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"SAfY9jjelZ0hpeWLrLpVw","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"tgSL_mdFqVXZgawGkY-9k","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
