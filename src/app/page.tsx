@@ -43,8 +43,8 @@ export default function HomePage() {
     <main className="mx-auto grid min-h-dvh max-w-lg gap-6 px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div>
         <h1 className="text-[34px] leading-tight font-bold">{APP_NAME}</h1>
-        <p className="mt-1 max-w-full text-[15px] leading-5 text-muted-foreground">{APP_TAGLINE}</p>
-        <p className="mt-2 max-w-full text-[17px] leading-6 text-muted-foreground">Input your name and select a race category</p>
+        <p className="mt-1 max-w-full text-[22px] leading-7 text-muted-foreground">{APP_TAGLINE}</p>
+        <p className="mt-2 max-w-full text-[22px] leading-7 text-muted-foreground">Input your name and select a race category</p>
       </div>
       {device.unreadable ? (
         <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
