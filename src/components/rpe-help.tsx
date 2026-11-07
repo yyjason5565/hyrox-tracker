@@ -11,7 +11,7 @@ export function RpeHelp() {
       <Popover.Trigger
         type="button"
         aria-label="What is RPE?"
-        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-foreground/25 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-primary ring-1 ring-primary/70 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         ?
       </Popover.Trigger>

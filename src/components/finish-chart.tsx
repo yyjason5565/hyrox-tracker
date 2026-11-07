@@ -27,7 +27,9 @@ export function FinishChart({ points }: { points: Array<{ id: string; sessionDat
     <div>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" className="h-52 w-full">
         <title>Official full-race finish times</title>
-        {points.length > 1 ? <polyline fill="none" stroke="currentColor" strokeWidth="2" points={line} className="text-primary" /> : null}
+        <line x1={pad} x2={width - pad} y1={pad} y2={pad} className="stroke-border" strokeWidth="1" />
+        <line x1={pad} x2={width - pad} y1={height - pad} y2={height - pad} className="stroke-border" strokeWidth="1" />
+        {points.length > 1 ? <polyline fill="none" stroke="currentColor" strokeWidth="2.5" points={line} className="text-primary" /> : null}
         {points.map((point, index) => (
           <g key={point.id}>
             <circle cx={xAt(index)} cy={yAt(point.seconds)} r="5" className="fill-primary" />
