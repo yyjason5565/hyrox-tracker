@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { chooseFocus, dailyPlan, emptyTraining, SAMPLE_WEEK, sanitizeTraining } from "../src/lib/advice.ts";
 import { BENCHMARK_LABEL, referenceMedianSeconds, sampleResults, stationBenchmarks } from "../src/lib/benchmarks.ts";
-import { APP_DEFINITION, APP_NAME, officialWorkload, standardDetail } from "../src/lib/divisions.ts";
+import { APP_DEFINITION, APP_NAME, APP_TAGLINE, officialWorkload, standardDetail } from "../src/lib/divisions.ts";
 import { DEVICE_STORAGE_KEY } from "../src/lib/device-store.ts";
 import { BACKUP_FORMAT } from "../src/lib/segments.ts";
 import { addProfile, emptyDevice, exportProfile, importBackup, saveSession } from "../src/lib/device-store.ts";
@@ -29,6 +29,7 @@ function race(division: "men_open" | "women_open", date: string, ski = "4:00") {
 
 test("product definition names both Singles Open categories and not every HYROX division", () => {
   assert.equal(APP_NAME, "RaceForge");
+  assert.equal(APP_TAGLINE, "Train 99 or go home 💪");
   assert.equal(DEVICE_STORAGE_KEY, "lane-ledger.device.v1");
   assert.equal(BACKUP_FORMAT, "lane-ledger-backup");
   assert.equal(APP_DEFINITION, "HYROX training tracker for Men\u2019s and Women\u2019s Singles Open");
